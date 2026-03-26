@@ -361,7 +361,43 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
 /* ══════════════════════════════════════
    SUPABASE SETUP & AUTH STYLES
 ══════════════════════════════════════ */
-#sb-login-overlay{position:fixed;inset:0;z-index:99999;background:rgba(10,10,20,.92);display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;backdrop-filter:blur(4px);}
+#sb-login-overlay{position:fixed;inset:0;z-index:99999;background:#0b0c11;display:flex;align-items:stretch;font-family:'Plus Jakarta Sans',sans-serif;}
+/* Login layout */
+.login-left{flex:1;background:linear-gradient(145deg,#0f1420 0%,#111827 60%,#1a1f2e 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;position:relative;overflow:hidden;}
+.login-left::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(26,86,219,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(124,58,237,.12) 0%,transparent 50%);pointer-events:none;}
+.login-left-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.login-brand{position:relative;z-index:1;text-align:center;margin-bottom:56px;}
+.login-brand-logo{width:72px;height:72px;border-radius:16px;margin-bottom:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.login-brand-label{font-size:10px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.35);font-family:'DM Mono',monospace;margin-bottom:8px;}
+.login-brand-title{font-size:32px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.1;}
+.login-brand-title em{color:#f97316;font-style:normal;}
+.login-brand-sub{font-size:13px;color:rgba(255,255,255,.35);margin-top:10px;font-family:'DM Mono',monospace;letter-spacing:.04em;}
+.login-stats{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:340px;}
+.login-stat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 18px;}
+.login-stat-num{font-size:22px;font-weight:800;color:#fff;font-family:'DM Mono',monospace;letter-spacing:-.5px;}
+.login-stat-lbl{font-size:10px;color:rgba(255,255,255,.35);font-family:'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase;margin-top:4px;}
+/* Right panel */
+.login-right{width:420px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;}
+.login-right-title{font-size:22px;font-weight:800;color:#111827;letter-spacing:-.3px;margin-bottom:4px;}
+.login-right-sub{font-size:13px;color:#6b7280;margin-bottom:36px;}
+/* Profile selector */
+.login-profiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:24px;}
+.login-profile-card{border:2px solid #e5e7eb;border-radius:12px;padding:14px 12px;text-align:center;cursor:pointer;transition:all .18s;background:#fff;}
+.login-profile-card:hover{border-color:#1a56db;background:#f0f5ff;}
+.login-profile-card.selected{border-color:#1a56db;background:#eff6ff;box-shadow:0 0 0 3px rgba(26,86,219,.12);}
+.login-profile-icon{font-size:26px;margin-bottom:6px;}
+.login-profile-name{font-size:13px;font-weight:800;color:#111827;}
+.login-profile-role{font-size:10px;color:#6b7280;font-family:'DM Mono',monospace;letter-spacing:.06em;margin-top:2px;}
+/* Password field */
+.login-field{width:100%;margin-bottom:14px;}
+.login-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:7px;}
+.login-field input{width:100%;box-sizing:border-box;padding:12px 16px;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9fafb;color:#111827;font-size:15px;font-family:inherit;outline:none;transition:all .18s;}
+.login-field input:focus{border-color:#1a56db;background:#fff;box-shadow:0 0 0 3px rgba(26,86,219,.1);}
+.login-submit{width:100%;padding:13px;border:none;border-radius:10px;background:#1a56db;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .18s;letter-spacing:.01em;}
+.login-submit:hover{background:#1e40af;}
+.login-submit:active{transform:scale(.99);}
+.login-error{font-size:12px;color:#dc2626;margin-top:10px;min-height:18px;font-weight:600;text-align:center;}
+.login-footer{margin-top:32px;font-size:11px;color:#9ca3af;text-align:center;font-family:'DM Mono',monospace;}
 .sb-modal{background:#1a1a24;border:1px solid #2a2a3a;border-radius:18px;padding:44px 52px;width:420px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.7);}
 .sb-modal h2{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;letter-spacing:-.3px;}
 .sb-modal .sb-sub{font-size:12px;color:#6b7280;margin-bottom:28px;letter-spacing:.06em;text-transform:uppercase;}
@@ -416,16 +452,66 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
 
 <!-- LOGIN OVERLAY -->
 <div id="sb-login-overlay" style="display:none">
-  <div class="sb-modal">
-    <h2>🔐 Price Monitoring</h2>
-    <p class="sb-sub">Acesso restrito · JOVI Market Intelligence</p>
-    <label>Email</label>
-    <input type="email" id="login-email" placeholder="email@empresa.com" onkeydown="if(event.key==='Enter')sbLogin()">
-    <label>Senha</label>
-    <input type="password" id="login-pass" placeholder="Senha" onkeydown="if(event.key==='Enter')sbLogin()">
-    <button class="sb-btn" onclick="sbLogin()">Entrar</button>
-    <div class="sb-error" id="sb-login-error"></div>
+
+  <!-- LEFT: branding -->
+  <div class="login-left">
+    <div class="login-left-grid"></div>
+    <div class="login-brand">
+      <img src="data:image/png;base64,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" class="login-brand-logo" alt="JOVI">
+      <div class="login-brand-label">Market Intelligence</div>
+      <div class="login-brand-title">Price <em>Monitoring</em></div>
+      <div class="login-brand-sub">W07 – W14 · 2026 · Casas Bahia</div>
+    </div>
+    <div class="login-stats">
+      <div class="login-stat-card">
+        <div class="login-stat-num">3</div>
+        <div class="login-stat-lbl">Canais</div>
+      </div>
+      <div class="login-stat-card">
+        <div class="login-stat-num">5</div>
+        <div class="login-stat-lbl">Marcas</div>
+      </div>
+      <div class="login-stat-card">
+        <div class="login-stat-num">W14</div>
+        <div class="login-stat-lbl">Semana atual</div>
+      </div>
+      <div class="login-stat-card">
+        <div class="login-stat-num">100+</div>
+        <div class="login-stat-lbl">SKUs</div>
+      </div>
+    </div>
   </div>
+
+  <!-- RIGHT: login form -->
+  <div class="login-right">
+    <div class="login-right-title">Bem-vindo</div>
+    <div class="login-right-sub">Selecione seu perfil e entre com sua senha</div>
+
+    <!-- Profile selector -->
+    <div class="login-profiles">
+      <div class="login-profile-card selected" id="profile-admin" onclick="selectProfile('admin')">
+        <div class="login-profile-icon">⚡</div>
+        <div class="login-profile-name">Admin</div>
+        <div class="login-profile-role">Acesso total</div>
+      </div>
+      <div class="login-profile-card" id="profile-guest" onclick="selectProfile('guest')">
+        <div class="login-profile-icon">👁</div>
+        <div class="login-profile-name">Convidado</div>
+        <div class="login-profile-role">Só visualizar</div>
+      </div>
+    </div>
+
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')sbLogin()">
+    </div>
+
+    <button class="login-submit" onclick="sbLogin()">Entrar no Dashboard</button>
+    <div class="login-error" id="sb-login-error"></div>
+
+    <div class="login-footer">Price Monitoring · JOVI Market Intelligence</div>
+  </div>
+
 </div>
 
 <!-- ADD ROW MODAL -->
@@ -2597,15 +2683,30 @@ async function sbInit(){
   });
 }
 
+// ── Profile selector ──
+let selectedProfile = 'admin';
+const PROFILE_EMAILS = {
+  admin: 'admin@jovi.com',
+  guest: 'guest@jovi.com'
+};
+function selectProfile(p){
+  selectedProfile = p;
+  document.querySelectorAll('.login-profile-card').forEach(c=>c.classList.remove('selected'));
+  $('profile-'+p).classList.add('selected');
+  $('login-pass').focus();
+}
+
 // ── Login ──
 async function sbLogin(){
-  const email = $('login-email').value.trim();
-  const pass  = $('login-pass').value;
-  if(!email||!pass){ $('sb-login-error').textContent='Preencha email e senha.'; return; }
-  $('sb-login-error').textContent='Entrando…';
-  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
-  if(error){ $('sb-login-error').textContent='Credenciais inválidas.'; return; }
+  const pass = $('login-pass').value;
+  if(!pass){ $('sb-login-error').textContent='Digite a senha.'; return; }
+  const btn = document.querySelector('.login-submit');
+  btn.textContent='Entrando…'; btn.disabled=true;
   $('sb-login-error').textContent='';
+  const email = PROFILE_EMAILS[selectedProfile];
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+  btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+  if(error){ $('sb-login-error').textContent='Senha incorreta. Tente novamente.'; $('login-pass').value=''; $('login-pass').focus(); return; }
 }
 
 // ── On login ──
