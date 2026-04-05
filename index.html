@@ -3,6 +3,10 @@
 <head>
 
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- Price Monitoring W14 v2.0 - Build 20260326 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Price Monitoring W14 · Online & Offline</title>
@@ -448,10 +452,34 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
 <body>
 
 <!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* Supabase loader — tries jsDelivr first, falls back to unpkg */
+window._sbLoaded = false;
+window._sbUnavailable = false;
+function _loadSupabase(urls, idx){
+  if(idx >= urls.length){
+    window._sbUnavailable = true;
+    window._sbLoaded = true; // signal done even on failure
+    if(window._sbInitWaiting) window._sbInitWaiting();
+    return;
+  }
+  const s = document.createElement('script');
+  s.src = urls[idx];
+  s.onload = () => {
+    window._sbLoaded = true;
+    if(window._sbInitWaiting) window._sbInitWaiting();
+  };
+  s.onerror = () => _loadSupabase(urls, idx + 1);
+  document.head.appendChild(s);
+}
+_loadSupabase([
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+  'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+], 0);
+</script>
 
 <!-- LOGIN OVERLAY -->
-<div id="sb-login-overlay" style="display:none">
+<div id="sb-login-overlay" style="display:flex">
 
   <!-- LEFT: branding -->
   <div class="login-left">
@@ -743,9 +771,10 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
   <!-- Unified sticky bar: tabs + shared filters -->
   <div class="off-filterbar">
     <div class="on-nav-tabs" style="border-right:1px solid var(--border)">
-      <button class="on-nav-tab on" id="off-tab-evolution" onclick="offGoTo('evolution')" style="font-family:'Plus Jakarta Sans',sans-serif">📈 W11 → W12</button>
-      <button class="on-nav-tab"    id="off-tab-prices"    onclick="offGoTo('prices')"   style="font-family:'Plus Jakarta Sans',sans-serif">📉 Weekly Evolution</button>
-      <button class="on-nav-tab"    id="off-tab-specs"     onclick="offGoTo('specs')"    style="font-family:'Plus Jakarta Sans',sans-serif">📋 Specs</button>
+      <button class="on-nav-tab on" id="off-tab-evolution"    onclick="offGoTo('evolution')"    style="font-family:'Plus Jakarta Sans',sans-serif">📈 W11 → W12</button>
+      <button class="on-nav-tab"    id="off-tab-prices"       onclick="offGoTo('prices')"       style="font-family:'Plus Jakarta Sans',sans-serif">📉 Weekly Evolution</button>
+      <button class="on-nav-tab"    id="off-tab-specs"        onclick="offGoTo('specs')"        style="font-family:'Plus Jakarta Sans',sans-serif">📋 Specs</button>
+      <button class="on-nav-tab"    id="off-tab-smartphones"  onclick="offGoTo('smartphones')"  style="font-family:'Plus Jakarta Sans',sans-serif">📱 Smartphones</button>
     </div>
     <div class="on-filter-row">
       <div class="dd" id="off-dd-brand">
@@ -852,6 +881,68 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
       </div>
 
       <div id="specs-content"></div>
+    </div>
+  </div>
+
+  <!-- SMARTPHONES CATALOG -->
+  <div id="off-sec-smartphones" style="display:none">
+    <div style="padding:24px 36px">
+
+      <!-- Header + actions -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px">JOVI Portfolio · Price Catalog</div>
+          <div style="font-size:18px;font-weight:800;letter-spacing:-.3px">Smartphones <span style="color:var(--accent2)">Catalog</span></div>
+          <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px">Prices here sync instantly to all comparison tables</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button onclick="smAddRow()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">+ Add Model</button>
+          <button onclick="smExportCSV()" style="padding:8px 14px;background:var(--surface2);color:var(--sub);border:1px solid var(--border2);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'JetBrains Mono',monospace">⬇ Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Stats bar -->
+      <div id="sm-stats" style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden"></div>
+
+      <!-- Table card -->
+      <div class="on-card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table id="sm-table" style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#f8f9fc;border-bottom:2px solid var(--border)">
+                <th style="padding:12px 16px;text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap">Model</th>
+                <th style="padding:12px 16px;text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap">Memory</th>
+                <th style="padding:12px 16px;text-align:right;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap">Price (R$) <span style="font-size:9px;color:var(--accent)">[editable]</span></th>
+                <th style="padding:12px 16px;text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Inline edit modal -->
+      <div id="sm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:32px 36px;width:420px;max-width:90vw;box-shadow:0 20px 80px rgba(0,0,0,.25)">
+          <div style="font-size:16px;font-weight:800;margin-bottom:24px">Edit / Add Model</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label style="font-size:12px;font-weight:700;color:var(--sub);font-family:'JetBrains Mono',monospace">Model Name
+              <input id="sm-inp-model" type="text" placeholder="e.g. JOVI Y21 4G" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--text);background:var(--surface2);outline:none">
+            </label>
+            <label style="font-size:12px;font-weight:700;color:var(--sub);font-family:'JetBrains Mono',monospace">Memory
+              <input id="sm-inp-memory" type="text" placeholder="e.g. 256 GB" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--text);background:var(--surface2);outline:none">
+            </label>
+            <label style="font-size:12px;font-weight:700;color:var(--sub);font-family:'JetBrains Mono',monospace">Price (R$)
+              <input id="sm-inp-price" type="number" min="0" step="1" placeholder="e.g. 1299" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text);background:var(--surface2);outline:none">
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:24px">
+            <button onclick="smModalSave()" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Save</button>
+            <button onclick="smModalClose()" style="padding:10px 18px;background:var(--surface2);color:var(--sub);border:1px solid var(--border2);border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancel</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1631,7 +1722,7 @@ function offRenderStackedChart(filtered){
    OFFLINE TAB + SPECS
 ══════════════════════════════════ */
 function offGoTo(tab){
-  ['prices','evolution','specs'].forEach(t=>{
+  ['prices','evolution','specs','smartphones'].forEach(t=>{
     const sec=$('off-sec-'+t);
     const btn=$('off-tab-'+t);
     if(sec) sec.style.display = t===tab?'block':'none';
@@ -1654,6 +1745,7 @@ function offGoTo(tab){
     offRenderWeekly();
   }
   if(tab==='specs') specsRender();
+  if(tab==='smartphones') smRender();
 }
 
 function offRenderWeekly(){
@@ -2670,17 +2762,49 @@ function copySql(){
     .catch(()=>{ prompt('Copie o SQL abaixo:', SETUP_SQL); });
 }
 
+// ── Local password fallback (works without Supabase) ──
+const LOCAL_PASSWORDS = {
+  'admin@jovi.com':  'jovi@admin2026',
+  'guest@jovi.com':  'jovi@guest2026'
+};
+
 // ── Init ──
 async function sbInit(){
-  if(sbClient) return; // já inicializado
-  sbClient = window.supabase.createClient(SB_URL, SB_KEY);
-  const { data:{ session } } = await sbClient.auth.getSession();
-  if(session){ await sbOnLogin(session.user); }
-  else { $('sb-login-overlay').style.display='flex'; }
-  sbClient.auth.onAuthStateChange(async (event, session)=>{
-    if(event==='SIGNED_IN' && session){ await sbOnLogin(session.user); }
-    if(event==='SIGNED_OUT'){ sbOnLogout(); }
+  if(sbClient) return;
+
+  // Wait for Supabase CDN (max 6s), using callback + polling
+  await new Promise(resolve => {
+    if(window._sbLoaded){ resolve(); return; }
+    window._sbInitWaiting = resolve;
+    setTimeout(resolve, 6000); // hard timeout
   });
+
+  const sbAvailable = !window._sbUnavailable && typeof window.supabase !== 'undefined';
+
+  if(!sbAvailable){
+    window._localMode = true;
+    $('sb-login-overlay').style.display='flex';
+    showToast('Modo local ativo (Supabase indisponível)', 'info');
+    return;
+  }
+
+  try {
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    const res = await sbClient.auth.getSession();
+    const session = res.data?.session;
+    if(session){ await sbOnLogin(session.user); }
+    else { $('sb-login-overlay').style.display='flex'; }
+    sbClient.auth.onAuthStateChange(async (event, session)=>{
+      if(event==='SIGNED_IN' && session){ await sbOnLogin(session.user); }
+      if(event==='SIGNED_OUT'){ sbOnLogout(); }
+    });
+  } catch(e){
+    console.warn('Supabase error, switching to local mode:', e);
+    window._localMode = true;
+    sbClient = null;
+    $('sb-login-overlay').style.display='flex';
+    showToast('Modo local ativo (erro Supabase)', 'info');
+  }
 }
 
 // ── Profile selector ──
@@ -2704,12 +2828,48 @@ async function sbLogin(){
   btn.textContent='Entrando…'; btn.disabled=true;
   $('sb-login-error').textContent='';
   const email = PROFILE_EMAILS[selectedProfile];
-  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
-  btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-  if(error){ $('sb-login-error').textContent='Senha incorreta. Tente novamente.'; $('login-pass').value=''; $('login-pass').focus(); return; }
+
+  // Local-password mode (Supabase unavailable or already in local mode)
+  if(window._localMode || !sbClient){
+    await new Promise(r=>setTimeout(r,300));
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+    if(LOCAL_PASSWORDS[email] === pass){
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
+    } else {
+      $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
+      $('login-pass').value=''; $('login-pass').focus();
+    }
+    return;
+  }
+
+  // Supabase mode — but fall back to local if credentials not configured there
+  try {
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+    if(!error) return; // success → onAuthStateChange handles the rest
+
+    // If Supabase says wrong password, try local passwords as fallback
+    if(LOCAL_PASSWORDS[email] === pass){
+      window._localMode = true;
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
+    } else {
+      $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
+      $('login-pass').value=''; $('login-pass').focus();
+    }
+  } catch(e) {
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+    // Network error — try local fallback
+    if(LOCAL_PASSWORDS[email] === pass){
+      window._localMode = true;
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
+    } else {
+      $('sb-login-error').textContent='Erro de conexão. Verifique sua senha.';
+      $('login-pass').value=''; $('login-pass').focus();
+    }
+  }
 }
 
-// ── On login ──
+// ── On login (Supabase) ──
 async function sbOnLogin(user){
   currentUser = user;
   $('sb-login-overlay').style.display='none';
@@ -2731,8 +2891,30 @@ async function sbOnLogin(user){
   showToast(`Bem-vindo, ${displayName}!`, 'success');
 }
 
+// ── On login (local-password mode) ──
+async function sbOnLoginLocal(user, profile){
+  currentUser = user;
+  currentRole = profile === 'admin' ? 'admin' : 'guest';
+  const displayName = profile === 'admin' ? 'Admin JOVI' : 'Convidado';
+  $('sb-login-overlay').style.display='none';
+  $('user-badge').style.display='flex';
+  $('logout-btn').style.display='block';
+  $('ub-name').textContent = displayName;
+  $('ub-role').textContent = currentRole==='admin' ? '★ Admin' : '👁 Convidado';
+  $('ub-dot').style.background = currentRole==='admin' ? '#f59e0b' : '#22c55e';
+  if(currentRole==='admin'){
+    $('admin-bar')?.classList.add('show');
+    injectAdminButtons();
+  }
+  showToast(`Bem-vindo, ${displayName}! (modo local)`, 'success');
+}
+
 // ── Logout ──
 async function sbLogout(){
+  if(window._localMode || !sbClient){
+    sbOnLogout();
+    return;
+  }
   await sbClient.auth.signOut();
 }
 function sbOnLogout(){
@@ -3027,13 +3209,276 @@ function injectAdminButtons(){
 
 // ── Kick off ──
 document.addEventListener('DOMContentLoaded', sbInit);
-// Also run after renders to inject admin buttons
 const _origSwitchChannel = switchChannel;
 window.switchChannel = function(ch){
   _origSwitchChannel.apply(this, arguments);
   setTimeout(injectAdminButtons, 100);
 };
-setTimeout(()=>{ sbInit(); }, 100);
+// sbInit is called via DOMContentLoaded above — no duplicate needed
+
+/* ══════════════════════════════════════════════════════
+   SMARTPHONES CATALOG
+   – Editable price table for all JOVI models
+   – Prices sync live to offData (price field) so all
+     comparison/evolution tables reflect the new value
+══════════════════════════════════════════════════════ */
+
+// Seed the catalog from offData (JOVI models only), deduplicated by model+memory
+let smCatalog = (function(){
+  const seen = new Set();
+  const rows = [];
+  // Pull all JOVI entries from offData
+  (offData||[]).filter(d=>d.brand==='JOVI').forEach(d=>{
+    const key = d.model+'|'+d.memory;
+    if(!seen.has(key)){
+      seen.add(key);
+      // Best available price: W12 > W11 > W10
+      const price = d.W12 ?? d.W11 ?? d.W10 ?? null;
+      rows.push({ id: key, model: d.model, memory: d.memory, price });
+    }
+  });
+  // Sort by price ascending (nulls last), then model
+  rows.sort((a,b)=>{
+    if(a.price==null && b.price==null) return a.model.localeCompare(b.model);
+    if(a.price==null) return 1;
+    if(b.price==null) return -1;
+    return a.price - b.price;
+  });
+  return rows;
+})();
+
+let smEditingId = null; // null = adding new
+
+/* ── propagate a price change into offData so evolution/comparison tables update ── */
+function smSyncToOffData(model, memory, newPrice){
+  (offData||[]).forEach(d=>{
+    if(d.model===model && d.memory===memory){
+      d.price = newPrice;
+      // Also update the most-recent week slot so charts pick it up
+      if(d.W12 !== undefined) d.W12 = newPrice;
+    }
+  });
+}
+
+/* ── regenerate a unique id for a catalog row ── */
+function smMakeId(model, memory){
+  return model.trim()+'|'+memory.trim();
+}
+
+/* ── stats bar ── */
+function smRenderStats(){
+  const bar = $('sm-stats');
+  if(!bar) return;
+  const total  = smCatalog.length;
+  const priced = smCatalog.filter(r=>r.price!=null).length;
+  const prices = smCatalog.filter(r=>r.price!=null).map(r=>r.price);
+  const minP   = prices.length ? Math.min(...prices) : null;
+  const maxP   = prices.length ? Math.max(...prices) : null;
+  const fmtR   = v => v!=null ? 'R$ '+v.toLocaleString('pt-BR') : '—';
+  const stats  = [
+    {lbl:'Total Models',  val:total,       clr:'var(--accent)'},
+    {lbl:'Priced',        val:priced,      clr:'#16a34a'},
+    {lbl:'Entry Price',   val:fmtR(minP),  clr:'var(--accent2)'},
+    {lbl:'Top Price',     val:fmtR(maxP),  clr:'var(--accent3,#7c3aed)'},
+  ];
+  bar.innerHTML = stats.map((s,i)=>`
+    <div style="padding:14px 20px;${i<stats.length-1?'border-right:1px solid var(--border)':''}">
+      <div style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-bottom:4px">${s.lbl}</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.5px;font-family:'JetBrains Mono',monospace;color:${s.clr}">${s.val}</div>
+    </div>`).join('');
+}
+
+/* ── main render ── */
+function smRender(){
+  smRenderStats();
+  const tbody = $('sm-tbody');
+  if(!tbody) return;
+
+  if(!smCatalog.length){
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:48px;text-align:center;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px">No models yet — click "+ Add Model"</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = smCatalog.map((row, idx) => {
+    const priceDisplay = row.price != null
+      ? 'R$ '+Number(row.price).toLocaleString('pt-BR')
+      : '<span style="color:var(--muted2)">—</span>';
+
+    const rowBg = idx % 2 === 0 ? '#fff' : '#f9fafc';
+
+    return `<tr style="background:${rowBg};border-bottom:1px solid var(--border);transition:background .1s" 
+              onmouseover="this.style.background='#eef3ff'" 
+              onmouseout="this.style.background='${rowBg}'">
+      <td style="padding:12px 16px;font-size:14px;font-weight:700;color:var(--text)">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1a3a6b;margin-right:8px;vertical-align:middle"></span>
+        ${row.model}
+      </td>
+      <td style="padding:12px 16px">
+        <span style="font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--surface2);border:1px solid var(--border2);padding:3px 9px;border-radius:5px;color:var(--sub)">${row.memory}</span>
+      </td>
+      <td style="padding:12px 16px;text-align:right">
+        <span 
+              style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--accent);cursor:pointer;padding:4px 10px;border-radius:6px;border:1.5px dashed var(--border2);transition:all .15s"
+              title="Click to edit price"
+              onmouseover="this.style.background='#eef3ff';this.style.borderColor='var(--accent)'"
+              onmouseout="this.style.background='transparent';this.style.borderColor='var(--border2)'"
+              onclick="smInlineEdit(${idx})">
+          ${priceDisplay}
+        </span>
+      </td>
+      <td style="padding:12px 16px;text-align:center;white-space:nowrap">
+        <button onclick="smOpenEdit(${idx})" 
+                style="padding:5px 12px;background:var(--surface2);color:var(--sub);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-right:4px;transition:all .15s"
+                onmouseover="this.style.background='#dbeafe';this.style.color='var(--accent)'"
+                onmouseout="this.style.background='var(--surface2)';this.style.color='var(--sub)'">✏ Edit</button>
+        <button onclick="smDelete(${idx})" 
+                style="padding:5px 12px;background:#fff0f0;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s"
+                onmouseover="this.style.background='#fee2e2'"
+                onmouseout="this.style.background='#fff0f0'">🗑 Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── inline price click-to-edit ── */
+function smInlineEdit(idx){
+  const row = smCatalog[idx];
+  if(!row) return;
+  const spans = document.querySelectorAll('#sm-tbody tr td:nth-child(3) span');
+  const target = spans[idx];
+  if(!target) return;
+
+  const oldVal = row.price != null ? row.price : '';
+  target.outerHTML = `<input id="sm-inline-inp" type="number" min="0" step="1" value="${oldVal}"
+    style="width:110px;padding:5px 10px;border:2px solid var(--accent);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);text-align:right;outline:none;background:#eef3ff"
+    onblur="smInlineSave(${idx},this.value)"
+    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){smRender();}"
+    autofocus>`;
+  document.getElementById('sm-inline-inp')?.focus();
+}
+
+function smInlineSave(idx, rawVal){
+  const row = smCatalog[idx];
+  if(!row) return;
+  const val = rawVal===''||rawVal==null ? null : Number(rawVal);
+  row.price = val;
+  smSyncToOffData(row.model, row.memory, val);
+  smRender();
+  smRenderStats();
+  // Trigger any visible offline re-renders
+  if($('off-sec-evolution')?.style.display!=='none') offRenderEvolution();
+  if($('off-sec-prices')?.style.display!=='none')    offRenderWeekly();
+}
+
+/* ── open modal for full edit ── */
+function smOpenEdit(idx){
+  const row = smCatalog[idx];
+  if(!row) return;
+  smEditingId = row.id;
+  $('sm-inp-model').value  = row.model;
+  $('sm-inp-memory').value = row.memory;
+  $('sm-inp-price').value  = row.price != null ? row.price : '';
+  $('sm-modal').style.display = 'flex';
+  setTimeout(()=>$('sm-inp-model')?.focus(), 80);
+}
+
+/* ── open modal for new row ── */
+function smAddRow(){
+  smEditingId = null;
+  $('sm-inp-model').value  = '';
+  $('sm-inp-memory').value = '';
+  $('sm-inp-price').value  = '';
+  $('sm-modal').style.display = 'flex';
+  setTimeout(()=>$('sm-inp-model')?.focus(), 80);
+}
+
+function smModalClose(){
+  $('sm-modal').style.display = 'none';
+}
+
+function smModalSave(){
+  const model  = ($('sm-inp-model')?.value||'').trim();
+  const memory = ($('sm-inp-memory')?.value||'').trim();
+  const priceRaw = $('sm-inp-price')?.value;
+  const price  = priceRaw===''||priceRaw==null ? null : Number(priceRaw);
+
+  if(!model || !memory){
+    alert('Model name and memory are required.');
+    return;
+  }
+
+  const newId = smMakeId(model, memory);
+
+  if(smEditingId === null){
+    // Adding new
+    if(smCatalog.find(r=>r.id===newId)){
+      alert('A model with this name + memory already exists. Edit it instead.');
+      return;
+    }
+    smCatalog.push({ id: newId, model, memory, price });
+    // Also inject into offData so it shows in comparison tables
+    offData.push({ brand:'JOVI', tier:'R$1k–1.5k', model, memory, W10:null, W11:null, W12:price, price });
+  } else {
+    // Editing existing
+    const idx = smCatalog.findIndex(r=>r.id===smEditingId);
+    if(idx === -1) return;
+    const old = smCatalog[idx];
+    // Remove old offData entries if model/memory changed
+    if(old.model !== model || old.memory !== memory){
+      for(let i=offData.length-1;i>=0;i--){
+        if(offData[i].brand==='JOVI' && offData[i].model===old.model && offData[i].memory===old.memory){
+          offData.splice(i,1);
+        }
+      }
+      offData.push({ brand:'JOVI', tier:'R$1k–1.5k', model, memory, W10:null, W11:null, W12:price, price });
+    }
+    smCatalog[idx] = { id: newId, model, memory, price };
+    smSyncToOffData(model, memory, price);
+  }
+
+  // Re-sort by price
+  smCatalog.sort((a,b)=>{
+    if(a.price==null && b.price==null) return a.model.localeCompare(b.model);
+    if(a.price==null) return 1;
+    if(b.price==null) return -1;
+    return a.price - b.price;
+  });
+
+  smModalClose();
+  smRender();
+  smRenderStats();
+}
+
+/* ── delete a row ── */
+function smDelete(idx){
+  const row = smCatalog[idx];
+  if(!row) return;
+  if(!confirm(`Remove "${row.model} (${row.memory})" from the catalog?`)) return;
+  smCatalog.splice(idx, 1);
+  smRender();
+  smRenderStats();
+}
+
+/* ── CSV export ── */
+function smExportCSV(){
+  const header = ['Model','Memory','Price (R$)'];
+  const rows   = smCatalog.map(r=>[
+    `"${r.model}"`,
+    `"${r.memory}"`,
+    r.price != null ? r.price : ''
+  ]);
+  const csv = [header.join(','), ...rows.map(r=>r.join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jovi_smartphones_catalog.csv';
+  a.click();
+}
+
+// Close modal when clicking the backdrop
+$('sm-modal')?.addEventListener('click', function(e){
+  if(e.target === this) smModalClose();
+});
 </script>
 </body>
 </html>

@@ -453,13 +453,22 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
 
 <!-- Supabase SDK -->
 <script>
-/* Supabase loader — tries jsDelivr first, falls back to unpkg, then marks as unavailable */
+/* Supabase loader — tries jsDelivr first, falls back to unpkg */
 window._sbLoaded = false;
+window._sbUnavailable = false;
 function _loadSupabase(urls, idx){
-  if(idx >= urls.length){ window._sbUnavailable = true; window._sbLoaded = true; return; }
+  if(idx >= urls.length){
+    window._sbUnavailable = true;
+    window._sbLoaded = true; // signal done even on failure
+    if(window._sbInitWaiting) window._sbInitWaiting();
+    return;
+  }
   const s = document.createElement('script');
   s.src = urls[idx];
-  s.onload  = () => { window._sbLoaded = true; };
+  s.onload = () => {
+    window._sbLoaded = true;
+    if(window._sbInitWaiting) window._sbInitWaiting();
+  };
   s.onerror = () => _loadSupabase(urls, idx + 1);
   document.head.appendChild(s);
 }
@@ -2763,35 +2772,39 @@ const LOCAL_PASSWORDS = {
 async function sbInit(){
   if(sbClient) return;
 
-  // Wait up to 4s for Supabase CDN to load
-  let waited = 0;
-  while(!window._sbLoaded && waited < 4000){ await new Promise(r=>setTimeout(r,100)); waited+=100; }
+  // Wait for Supabase CDN (max 6s), using callback + polling
+  await new Promise(resolve => {
+    if(window._sbLoaded){ resolve(); return; }
+    window._sbInitWaiting = resolve;
+    setTimeout(resolve, 6000); // hard timeout
+  });
 
   const sbAvailable = !window._sbUnavailable && typeof window.supabase !== 'undefined';
 
   if(!sbAvailable){
-    // Supabase CDN failed — switch to local-password-only mode
     window._localMode = true;
     $('sb-login-overlay').style.display='flex';
     showToast('Modo local ativo (Supabase indisponível)', 'info');
     return;
   }
 
-  sbClient = window.supabase.createClient(SB_URL, SB_KEY);
-
-  let session;
   try {
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
     const res = await sbClient.auth.getSession();
-    session = res.data?.session;
-  } catch(e){ session = null; }
-
-  if(session){ await sbOnLogin(session.user); }
-  else { $('sb-login-overlay').style.display='flex'; }
-
-  sbClient.auth.onAuthStateChange(async (event, session)=>{
-    if(event==='SIGNED_IN' && session){ await sbOnLogin(session.user); }
-    if(event==='SIGNED_OUT'){ sbOnLogout(); }
-  });
+    const session = res.data?.session;
+    if(session){ await sbOnLogin(session.user); }
+    else { $('sb-login-overlay').style.display='flex'; }
+    sbClient.auth.onAuthStateChange(async (event, session)=>{
+      if(event==='SIGNED_IN' && session){ await sbOnLogin(session.user); }
+      if(event==='SIGNED_OUT'){ sbOnLogout(); }
+    });
+  } catch(e){
+    console.warn('Supabase error, switching to local mode:', e);
+    window._localMode = true;
+    sbClient = null;
+    $('sb-login-overlay').style.display='flex';
+    showToast('Modo local ativo (erro Supabase)', 'info');
+  }
 }
 
 // ── Profile selector ──
@@ -2816,25 +2829,44 @@ async function sbLogin(){
   $('sb-login-error').textContent='';
   const email = PROFILE_EMAILS[selectedProfile];
 
-  // Local-password mode (Supabase unavailable)
+  // Local-password mode (Supabase unavailable or already in local mode)
   if(window._localMode || !sbClient){
-    await new Promise(r=>setTimeout(r,350)); // simulate latency
+    await new Promise(r=>setTimeout(r,300));
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
     if(LOCAL_PASSWORDS[email] === pass){
-      btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-      const fakeUser = { id: selectedProfile, email, localMode: true };
-      await sbOnLoginLocal(fakeUser, selectedProfile);
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
     } else {
-      btn.textContent='Entrar no Dashboard'; btn.disabled=false;
       $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
       $('login-pass').value=''; $('login-pass').focus();
     }
     return;
   }
 
-  // Supabase mode
-  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
-  btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-  if(error){ $('sb-login-error').textContent='Senha incorreta. Tente novamente.'; $('login-pass').value=''; $('login-pass').focus(); return; }
+  // Supabase mode — but fall back to local if credentials not configured there
+  try {
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+    if(!error) return; // success → onAuthStateChange handles the rest
+
+    // If Supabase says wrong password, try local passwords as fallback
+    if(LOCAL_PASSWORDS[email] === pass){
+      window._localMode = true;
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
+    } else {
+      $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
+      $('login-pass').value=''; $('login-pass').focus();
+    }
+  } catch(e) {
+    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
+    // Network error — try local fallback
+    if(LOCAL_PASSWORDS[email] === pass){
+      window._localMode = true;
+      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
+    } else {
+      $('sb-login-error').textContent='Erro de conexão. Verifique sua senha.';
+      $('login-pass').value=''; $('login-pass').focus();
+    }
+  }
 }
 
 // ── On login (Supabase) ──
@@ -3177,13 +3209,12 @@ function injectAdminButtons(){
 
 // ── Kick off ──
 document.addEventListener('DOMContentLoaded', sbInit);
-// Also run after renders to inject admin buttons
 const _origSwitchChannel = switchChannel;
 window.switchChannel = function(ch){
   _origSwitchChannel.apply(this, arguments);
   setTimeout(injectAdminButtons, 100);
 };
-setTimeout(()=>{ sbInit(); }, 100);
+// sbInit is called via DOMContentLoaded above — no duplicate needed
 
 /* ══════════════════════════════════════════════════════
    SMARTPHONES CATALOG
