@@ -579,6 +579,10 @@ _loadSupabase([
       <span class="ct-dot" style="background:#4f8ef7"></span>
       Online
     </button>
+    <button class="channel-tab" onclick="switchChannel('smartphones')" id="ctab-smartphones">
+      <span class="ct-dot" style="background:#10b981"></span>
+      Smartphones
+    </button>
   </div>
   <div class="channel-logo-right" style="gap:12px">
     <div id="user-badge" style="display:none">
@@ -3479,6 +3483,303 @@ function smExportCSV(){
 $('sm-modal')?.addEventListener('click', function(e){
   if(e.target === this) smModalClose();
 });
+</script>
+
+<!-- ══════════════ SMARTPHONES ══════════════ -->
+<div class="channel" id="smartphones" style="background:#f1f2f7;min-height:100vh;font-family:'DM Sans',sans-serif;color:#111827">
+
+  <!-- Header -->
+  <div style="padding:20px 36px;background:#fff;border-bottom:1px solid #e2e5f0;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#1a56db;font-family:'DM Mono',monospace;margin-bottom:3px">JOVI · Portfolio Completo</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.3px">Smartphones <span style="color:#e8530a">Catalog</span></div>
+      <div style="font-size:12px;color:#6b7280;font-family:'DM Mono',monospace;margin-top:3px">Todos os modelos · Preços editáveis · Sincroniza com tabelas de comparação</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="smAddRow()" style="padding:8px 18px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Adicionar Modelo</button>
+      <button onclick="smExportCSV()" style="padding:8px 14px;background:#f7f8fc;color:#374151;border:1px solid #d0d4e8;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">⬇ CSV</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div id="sm-stats2" style="display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-bottom:1px solid #e2e5f0"></div>
+
+  <!-- Main content -->
+  <div style="padding:28px 36px">
+    <div style="background:#fff;border:1px solid #e2e5f0;border-radius:12px;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table id="sm-table2" style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#f8f9fc;border-bottom:2px solid #e2e5f0">
+              <th style="padding:13px 20px;text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;font-family:'DM Mono',monospace;font-weight:600">Modelo</th>
+              <th style="padding:13px 20px;text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;font-family:'DM Mono',monospace;font-weight:600">Memória</th>
+              <th style="padding:13px 20px;text-align:right;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;font-family:'DM Mono',monospace;font-weight:600">Preço <span style="color:#1a56db;font-size:9px">[clique p/ editar]</span></th>
+              <th style="padding:13px 20px;text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;font-family:'DM Mono',monospace;font-weight:600">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="sm-tbody2"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal (shared with offline version via smAddRow/smModalSave) -->
+  <div id="sm-modal2" onclick="if(event.target===this)smModal2Close()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:32px 36px;width:420px;max-width:90vw;box-shadow:0 20px 80px rgba(0,0,0,.25)">
+      <div style="font-size:16px;font-weight:800;margin-bottom:24px;color:#111827" id="sm-modal2-title">Editar Modelo</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label style="font-size:12px;font-weight:700;color:#374151;font-family:'DM Mono',monospace">Nome do Modelo
+          <input id="sm2-inp-model" type="text" placeholder="ex: JOVI Y21 4G" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid #d0d4e8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#111827;background:#f7f8fc;outline:none;box-sizing:border-box">
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151;font-family:'DM Mono',monospace">Memória
+          <input id="sm2-inp-memory" type="text" placeholder="ex: 256 GB" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid #d0d4e8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#111827;background:#f7f8fc;outline:none;box-sizing:border-box">
+        </label>
+        <label style="font-size:12px;font-weight:700;color:#374151;font-family:'DM Mono',monospace">Preço (R$)
+          <input id="sm2-inp-price" type="number" min="0" step="1" placeholder="ex: 1299" style="margin-top:6px;display:block;width:100%;padding:9px 12px;border:1.5px solid #d0d4e8;border-radius:8px;font-family:'DM Mono',monospace;font-size:14px;color:#111827;background:#f7f8fc;outline:none;box-sizing:border-box">
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <button onclick="smModal2Save()" style="flex:1;padding:11px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">Salvar</button>
+        <button onclick="smModal2Close()" style="padding:11px 20px;background:#f7f8fc;color:#374151;border:1px solid #d0d4e8;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /smartphones -->
+
+<script>
+/* ══════════════════════════════════════════════════
+   SMARTPHONES CHANNEL — standalone top-level catalog
+   All models from offData (all brands) + JOVI-only
+   highlight. Prices editable inline or via modal.
+══════════════════════════════════════════════════ */
+
+// Build catalog from ALL brands in offData, deduped by model+memory
+let sm2Catalog = (function(){
+  const seen = new Set();
+  const rows = [];
+  (offData||[]).forEach(d=>{
+    const key = d.brand+'|'+d.model+'|'+d.memory;
+    if(!seen.has(key)){
+      seen.add(key);
+      const price = d.W12 ?? d.W11 ?? d.W10 ?? null;
+      rows.push({ id:key, brand:d.brand, model:d.model, memory:d.memory, price, tier:d.tier });
+    }
+  });
+  rows.sort((a,b)=>{
+    // JOVI first, then by brand, then by price
+    if(a.brand==='JOVI' && b.brand!=='JOVI') return -1;
+    if(b.brand==='JOVI' && a.brand!=='JOVI') return 1;
+    if(a.brand!==b.brand) return a.brand.localeCompare(b.brand);
+    if(a.price==null && b.price==null) return a.model.localeCompare(b.model);
+    if(a.price==null) return 1;
+    if(b.price==null) return -1;
+    return a.price - b.price;
+  });
+  return rows;
+})();
+
+let sm2EditingIdx = null;
+
+const SM2_BRAND_COLORS = {
+  JOVI:'#1a3a6b', Apple:'#d97706', Samsung:'#7c3aed',
+  OPPO:'#059669', Motorola:'#374151'
+};
+
+function sm2RenderStats(){
+  const bar = $('sm-stats2'); if(!bar) return;
+  const total  = sm2Catalog.length;
+  const jovi   = sm2Catalog.filter(r=>r.brand==='JOVI').length;
+  const priced = sm2Catalog.filter(r=>r.price!=null).length;
+  const prices = sm2Catalog.filter(r=>r.price!=null).map(r=>r.price);
+  const minP   = prices.length ? Math.min(...prices) : null;
+  const maxP   = prices.length ? Math.max(...prices) : null;
+  const fR     = v => v!=null ? 'R$\u00a0'+Number(v).toLocaleString('pt-BR') : '—';
+  const stats  = [
+    {lbl:'Total de SKUs',   val:total,    clr:'#1a56db'},
+    {lbl:'Modelos JOVI',    val:jovi,     clr:'#1a3a6b'},
+    {lbl:'Menor Preço',     val:fR(minP), clr:'#e8530a'},
+    {lbl:'Maior Preço',     val:fR(maxP), clr:'#7c3aed'},
+  ];
+  bar.innerHTML = stats.map((s,i)=>`
+    <div style="padding:14px 22px;${i<3?'border-right:1px solid #e2e5f0':''}">
+      <div style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#9ca3af;font-family:'DM Mono',monospace;margin-bottom:4px">${s.lbl}</div>
+      <div style="font-size:20px;font-weight:800;letter-spacing:-.5px;font-family:'DM Mono',monospace;color:${s.clr}">${s.val}</div>
+    </div>`).join('');
+}
+
+function sm2Render(){
+  sm2RenderStats();
+  const tbody = $('sm-tbody2'); if(!tbody) return;
+
+  if(!sm2Catalog.length){
+    tbody.innerHTML=`<tr><td colspan="4" style="padding:48px;text-align:center;color:#9ca3af;font-family:'DM Mono',monospace">Nenhum modelo cadastrado.</td></tr>`;
+    return;
+  }
+
+  let lastBrand = null;
+  let html = '';
+  sm2Catalog.forEach((row, idx)=>{
+    const isJOVI   = row.brand === 'JOVI';
+    const brandClr = SM2_BRAND_COLORS[row.brand] || '#374151';
+    const rowBg    = isJOVI ? '#f0f4ff' : (idx%2===0?'#fff':'#f9fafc');
+    const priceStr = row.price!=null
+      ? 'R$ '+Number(row.price).toLocaleString('pt-BR')
+      : '<span style="color:#9ca3af">—</span>';
+
+    // Brand group header
+    if(row.brand !== lastBrand){
+      lastBrand = row.brand;
+      html += `<tr style="background:#f3f4f6">
+        <td colspan="4" style="padding:10px 20px 7px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:${brandClr};border-bottom:2px solid ${brandClr}22;border-top:1px solid #e2e5f0">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${brandClr};margin-right:7px;vertical-align:middle"></span>${row.brand}
+        </td>
+      </tr>`;
+    }
+
+    html += `<tr style="background:${rowBg};border-bottom:1px solid #e2e5f0;transition:background .1s"
+               onmouseover="this.style.background='#dbeafe20'"
+               onmouseout="this.style.background='${rowBg}'">
+      <td style="padding:11px 20px;font-size:14px;font-weight:${isJOVI?'800':'500'};color:#111827">
+        ${isJOVI?'<span style="font-size:10px;background:#1a3a6b;color:#fff;padding:2px 6px;border-radius:4px;margin-right:7px;font-family:DM Mono,monospace;font-weight:700">JOVI</span>':''}${row.model}
+      </td>
+      <td style="padding:11px 20px">
+        <span style="font-size:12px;font-family:'DM Mono',monospace;background:#f7f8fc;border:1px solid #e2e5f0;padding:3px 9px;border-radius:5px;color:#374151">${row.memory}</span>
+      </td>
+      <td style="padding:11px 20px;text-align:right">
+        <span class="sm2-price-cell"
+          style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${isJOVI?'#1a56db':'#374151'};cursor:pointer;padding:4px 10px;border-radius:6px;border:1.5px dashed #d0d4e8;transition:all .15s;display:inline-block"
+          title="Clique para editar o preço"
+          onmouseover="this.style.borderColor='#1a56db';this.style.background='#eef3ff'"
+          onmouseout="this.style.borderColor='#d0d4e8';this.style.background='transparent'"
+          onclick="sm2InlineEdit(${idx})">${priceStr}</span>
+      </td>
+      <td style="padding:11px 20px;text-align:center;white-space:nowrap">
+        <button onclick="sm2OpenEdit(${idx})"
+          style="padding:5px 12px;background:#f7f8fc;color:#374151;border:1px solid #d0d4e8;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;margin-right:4px;transition:all .15s"
+          onmouseover="this.style.background='#dbeafe';this.style.color='#1a56db'"
+          onmouseout="this.style.background='#f7f8fc';this.style.color='#374151'">✏ Editar</button>
+        <button onclick="sm2Delete(${idx})"
+          style="padding:5px 12px;background:#fff0f0;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s"
+          onmouseover="this.style.background='#fee2e2'"
+          onmouseout="this.style.background='#fff0f0'">🗑 Remover</button>
+      </td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+/* ── inline edit ── */
+function sm2InlineEdit(idx){
+  const row = sm2Catalog[idx]; if(!row) return;
+  const cells = document.querySelectorAll('#sm-tbody2 .sm2-price-cell');
+  const target = cells[idx]; if(!target) return;
+  const old = row.price!=null ? row.price : '';
+  target.outerHTML = `<input id="sm2-inline-inp" type="number" min="0" step="1" value="${old}"
+    style="width:120px;padding:5px 10px;border:2px solid #1a56db;border-radius:6px;font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#1a56db;text-align:right;outline:none;background:#eef3ff"
+    onblur="sm2InlineSave(${idx},this.value)"
+    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')sm2Render();"
+    autofocus>`;
+  document.getElementById('sm2-inline-inp')?.focus();
+}
+
+function sm2InlineSave(idx, rawVal){
+  const row = sm2Catalog[idx]; if(!row) return;
+  const val = (rawVal===''||rawVal==null) ? null : Number(rawVal);
+  row.price = val;
+  // sync to offData
+  (offData||[]).forEach(d=>{
+    if(d.brand===row.brand && d.model===row.model && d.memory===row.memory){
+      d.price=val; if(d.W12!==undefined) d.W12=val;
+    }
+  });
+  sm2Render();
+}
+
+/* ── modal edit ── */
+function sm2OpenEdit(idx){
+  const row = sm2Catalog[idx]; if(!row) return;
+  sm2EditingIdx = idx;
+  $('sm2-inp-model').value  = row.model;
+  $('sm2-inp-memory').value = row.memory;
+  $('sm2-inp-price').value  = row.price!=null ? row.price : '';
+  $('sm-modal2-title').textContent = 'Editar — '+row.model;
+  $('sm-modal2').style.display='flex';
+  setTimeout(()=>$('sm2-inp-model')?.focus(),80);
+}
+
+function smAddRow(){
+  sm2EditingIdx = null;
+  $('sm2-inp-model').value='';
+  $('sm2-inp-memory').value='';
+  $('sm2-inp-price').value='';
+  $('sm-modal2-title').textContent='Adicionar Modelo';
+  $('sm-modal2').style.display='flex';
+  setTimeout(()=>$('sm2-inp-model')?.focus(),80);
+}
+
+function smModal2Close(){ $('sm-modal2').style.display='none'; }
+
+function smModal2Save(){
+  const model  = ($('sm2-inp-model')?.value||'').trim();
+  const memory = ($('sm2-inp-memory')?.value||'').trim();
+  const priceR = $('sm2-inp-price')?.value;
+  const price  = (priceR===''||priceR==null) ? null : Number(priceR);
+  if(!model||!memory){ alert('Nome do modelo e memória são obrigatórios.'); return; }
+
+  if(sm2EditingIdx===null){
+    // new row
+    const brand = model.toUpperCase().startsWith('JOVI') ? 'JOVI' : 'JOVI';
+    const id = brand+'|'+model+'|'+memory;
+    if(sm2Catalog.find(r=>r.id===id)){ alert('Esse modelo já existe. Edite-o na tabela.'); return; }
+    sm2Catalog.push({ id, brand, model, memory, price, tier:'—' });
+    offData.push({ brand, tier:'—', model, memory, W10:null, W11:null, W12:price, price });
+  } else {
+    const row = sm2Catalog[sm2EditingIdx];
+    row.model=model; row.memory=memory; row.price=price;
+    row.id=row.brand+'|'+model+'|'+memory;
+    (offData||[]).forEach(d=>{
+      if(d.model===row.model&&d.memory===row.memory&&d.brand===row.brand){d.price=price;if(d.W12!==undefined)d.W12=price;}
+    });
+  }
+
+  sm2Catalog.sort((a,b)=>{
+    if(a.brand==='JOVI'&&b.brand!=='JOVI')return -1;
+    if(b.brand==='JOVI'&&a.brand!=='JOVI')return 1;
+    if(a.brand!==b.brand)return a.brand.localeCompare(b.brand);
+    if(a.price==null&&b.price==null)return a.model.localeCompare(b.model);
+    if(a.price==null)return 1;
+    if(b.price==null)return -1;
+    return a.price-b.price;
+  });
+
+  smModal2Close();
+  sm2Render();
+}
+
+function sm2Delete(idx){
+  const row=sm2Catalog[idx]; if(!row) return;
+  if(!confirm(`Remover "${row.model} (${row.memory})"?`)) return;
+  sm2Catalog.splice(idx,1);
+  sm2Render();
+}
+
+function smExportCSV(){
+  const hdr=['Marca','Modelo','Memória','Preço (R$)'];
+  const rows=sm2Catalog.map(r=>[`"${r.brand}"`,`"${r.model}"`,`"${r.memory}"`,r.price!=null?r.price:'']);
+  const csv=[hdr.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='jovi_smartphones.csv'; a.click();
+}
+
+// Render when switching to this channel
+const _origSC2 = window.switchChannel;
+window.switchChannel = function(ch){
+  _origSC2.apply(this, arguments);
+  if(ch==='smartphones') sm2Render();
+};
 </script>
 </body>
 </html>
