@@ -452,31 +452,6 @@ table.on-t .on-grp-hd td { padding:14px 8px 7px; font-size:12px; font-weight:700
 <body>
 
 <!-- Supabase SDK -->
-<script>
-/* Supabase loader — tries jsDelivr first, falls back to unpkg */
-window._sbLoaded = false;
-window._sbUnavailable = false;
-function _loadSupabase(urls, idx){
-  if(idx >= urls.length){
-    window._sbUnavailable = true;
-    window._sbLoaded = true; // signal done even on failure
-    if(window._sbInitWaiting) window._sbInitWaiting();
-    return;
-  }
-  const s = document.createElement('script');
-  s.src = urls[idx];
-  s.onload = () => {
-    window._sbLoaded = true;
-    if(window._sbInitWaiting) window._sbInitWaiting();
-  };
-  s.onerror = () => _loadSupabase(urls, idx + 1);
-  document.head.appendChild(s);
-}
-_loadSupabase([
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
-  'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
-], 0);
-</script>
 
 <!-- LOGIN OVERLAY -->
 <div id="sb-login-overlay" style="display:flex">
@@ -2767,167 +2742,74 @@ function copySql(){
 }
 
 // ── Local password fallback (works without Supabase) ──
-const LOCAL_PASSWORDS = {
-  'admin@jovi.com':  'jovi@admin2026',
-  'guest@jovi.com':  'jovi@guest2026'
-};
+// ════════════════════════════════
+// AUTH — local password only
+// ════════════════════════════════
+const LOCAL_PASSWORDS = { admin: 'jovi@admin2026', guest: 'jovi@guest2026' };
+let selectedProfile = 'admin';
+const PROFILE_EMAILS = { admin:'admin@jovi.com', guest:'guest@jovi.com' };
 
-// ── Init ──
-async function sbInit(){
-  if(sbClient) return;
-
-  // Wait for Supabase CDN (max 6s), using callback + polling
-  await new Promise(resolve => {
-    if(window._sbLoaded){ resolve(); return; }
-    window._sbInitWaiting = resolve;
-    setTimeout(resolve, 6000); // hard timeout
-  });
-
-  const sbAvailable = !window._sbUnavailable && typeof window.supabase !== 'undefined';
-
-  if(!sbAvailable){
-    window._localMode = true;
-    $('sb-login-overlay').style.display='flex';
-    showToast('Modo local ativo (Supabase indisponível)', 'info');
-    return;
-  }
-
-  try {
-    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
-    const res = await sbClient.auth.getSession();
-    const session = res.data?.session;
-    if(session){ await sbOnLogin(session.user); }
-    else { $('sb-login-overlay').style.display='flex'; }
-    sbClient.auth.onAuthStateChange(async (event, session)=>{
-      if(event==='SIGNED_IN' && session){ await sbOnLogin(session.user); }
-      if(event==='SIGNED_OUT'){ sbOnLogout(); }
-    });
-  } catch(e){
-    console.warn('Supabase error, switching to local mode:', e);
-    window._localMode = true;
-    sbClient = null;
-    $('sb-login-overlay').style.display='flex';
-    showToast('Modo local ativo (erro Supabase)', 'info');
-  }
+function sbInit(){
+  // Nothing to initialise — just show login screen
+  $('sb-login-overlay').style.display = 'flex';
 }
 
-// ── Profile selector ──
-let selectedProfile = 'admin';
-const PROFILE_EMAILS = {
-  admin: 'admin@jovi.com',
-  guest: 'guest@jovi.com'
-};
 function selectProfile(p){
   selectedProfile = p;
-  document.querySelectorAll('.login-profile-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.login-profile-card').forEach(c => c.classList.remove('selected'));
   $('profile-'+p).classList.add('selected');
   $('login-pass').focus();
 }
 
-// ── Login ──
-async function sbLogin(){
-  const pass = $('login-pass').value;
-  if(!pass){ $('sb-login-error').textContent='Digite a senha.'; return; }
-  const btn = document.querySelector('.login-submit');
-  btn.textContent='Entrando…'; btn.disabled=true;
-  $('sb-login-error').textContent='';
-  const email = PROFILE_EMAILS[selectedProfile];
+function sbLogin(){
+  const pass = ($('login-pass').value || '').trim();
+  $('sb-login-error').textContent = '';
 
-  // Local-password mode (Supabase unavailable or already in local mode)
-  if(window._localMode || !sbClient){
-    await new Promise(r=>setTimeout(r,300));
-    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-    if(LOCAL_PASSWORDS[email] === pass){
-      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
-    } else {
-      $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
-      $('login-pass').value=''; $('login-pass').focus();
-    }
+  if(!pass){
+    $('sb-login-error').textContent = 'Digite a senha.';
     return;
   }
 
-  // Supabase mode — but fall back to local if credentials not configured there
-  try {
-    const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pass });
-    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-    if(!error) return; // success → onAuthStateChange handles the rest
-
-    // If Supabase says wrong password, try local passwords as fallback
-    if(LOCAL_PASSWORDS[email] === pass){
-      window._localMode = true;
-      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
-    } else {
-      $('sb-login-error').textContent='Senha incorreta. Tente novamente.';
-      $('login-pass').value=''; $('login-pass').focus();
-    }
-  } catch(e) {
-    btn.textContent='Entrar no Dashboard'; btn.disabled=false;
-    // Network error — try local fallback
-    if(LOCAL_PASSWORDS[email] === pass){
-      window._localMode = true;
-      await sbOnLoginLocal({ id: selectedProfile, email, localMode: true }, selectedProfile);
-    } else {
-      $('sb-login-error').textContent='Erro de conexão. Verifique sua senha.';
-      $('login-pass').value=''; $('login-pass').focus();
-    }
+  if(LOCAL_PASSWORDS[selectedProfile] !== pass){
+    $('sb-login-error').textContent = 'Senha incorreta. Tente novamente.';
+    $('login-pass').value = '';
+    $('login-pass').focus();
+    return;
   }
-}
 
-// ── On login (Supabase) ──
-async function sbOnLogin(user){
-  currentUser = user;
-  $('sb-login-overlay').style.display='none';
-  // fetch role
-  const { data } = await sbClient.from('user_profiles').select('role,display_name').eq('id', user.id).single();
-  currentRole = data?.role || 'guest';
-  const displayName = data?.display_name || user.email.split('@')[0];
-  // update nav badge
-  $('user-badge').style.display='flex';
-  $('logout-btn').style.display='block';
-  $('ub-name').textContent = displayName;
-  $('ub-role').textContent = currentRole==='admin' ? '★ Admin' : '👁 Convidado';
-  $('ub-dot').style.background = currentRole==='admin' ? '#f59e0b' : '#22c55e';
-  if(currentRole==='admin'){
-    $('admin-bar').classList.add('show');
-  }
-  // load overrides from DB and re-render
-  await sbLoadOverrides();
-  showToast(`Bem-vindo, ${displayName}!`, 'success');
-}
+  // ✅ Correct password — log in
+  currentUser  = { id: selectedProfile, email: PROFILE_EMAILS[selectedProfile] };
+  currentRole  = selectedProfile === 'admin' ? 'admin' : 'guest';
+  const name   = selectedProfile === 'admin' ? 'Admin JOVI' : 'Convidado';
 
-// ── On login (local-password mode) ──
-async function sbOnLoginLocal(user, profile){
-  currentUser = user;
-  currentRole = profile === 'admin' ? 'admin' : 'guest';
-  const displayName = profile === 'admin' ? 'Admin JOVI' : 'Convidado';
-  $('sb-login-overlay').style.display='none';
-  $('user-badge').style.display='flex';
-  $('logout-btn').style.display='block';
-  $('ub-name').textContent = displayName;
-  $('ub-role').textContent = currentRole==='admin' ? '★ Admin' : '👁 Convidado';
-  $('ub-dot').style.background = currentRole==='admin' ? '#f59e0b' : '#22c55e';
-  if(currentRole==='admin'){
+  $('sb-login-overlay').style.display = 'none';
+  $('user-badge').style.display       = 'flex';
+  $('logout-btn').style.display       = 'block';
+  $('ub-name').textContent            = name;
+  $('ub-role').textContent            = currentRole === 'admin' ? '★ Admin' : '👁 Convidado';
+  $('ub-dot').style.background        = currentRole === 'admin' ? '#f59e0b' : '#22c55e';
+
+  if(currentRole === 'admin'){
     $('admin-bar')?.classList.add('show');
-    injectAdminButtons();
+    setTimeout(injectAdminButtons, 200);
   }
-  showToast(`Bem-vindo, ${displayName}! (modo local)`, 'success');
+
+  showToast('Bem-vindo, ' + name + '!', 'success');
 }
 
-// ── Logout ──
-async function sbLogout(){
-  if(window._localMode || !sbClient){
-    sbOnLogout();
-    return;
-  }
-  await sbClient.auth.signOut();
+function sbLogout(){
+  currentUser = null; currentRole = 'guest';
+  $('user-badge').style.display  = 'none';
+  $('logout-btn').style.display  = 'none';
+  $('admin-bar')?.classList.remove('show');
+  $('login-pass').value = '';
+  $('sb-login-overlay').style.display = 'flex';
 }
-function sbOnLogout(){
-  currentUser=null; currentRole='guest';
-  $('user-badge').style.display='none';
-  $('logout-btn').style.display='none';
-  $('admin-bar').classList.remove('show');
-  $('sb-login-overlay').style.display='flex';
-}
+function sbOnLogout(){ sbLogout(); }
+
+// Stubs so existing code that calls these doesn't crash
+function sbLoadOverrides(){ return Promise.resolve(); }
+function sbSaveOverride(){ return Promise.resolve(); }
 
 // ── Load overrides from DB ──
 async function sbLoadOverrides(){
@@ -3212,13 +3094,12 @@ function injectAdminButtons(){
 }
 
 // ── Kick off ──
-document.addEventListener('DOMContentLoaded', sbInit);
+sbInit();
 const _origSwitchChannel = switchChannel;
 window.switchChannel = function(ch){
   _origSwitchChannel.apply(this, arguments);
   setTimeout(injectAdminButtons, 100);
 };
-// sbInit is called via DOMContentLoaded above — no duplicate needed
 
 /* ══════════════════════════════════════════════════════
    SMARTPHONES CATALOG
